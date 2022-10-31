@@ -1,6 +1,6 @@
 {
     "name": "vscode-ros",
-    "version": "0.8.3",
+    "version": "0.8.4",
     "publisher": "ms-iot",
     "engines": {
         "vscode": "^1.68.0"
@@ -35,7 +35,7 @@
     "bugs": {
         "url": "https://github.com/ms-iot/vscode-ros/issues"
     },
-    "preview": true,
+    "preview": false,
     "main": "./out/src/extension",
     "activationEvents": [
         "*",
