@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: danhellem/github-actions-issue-to-work-item@master
         env:
-          ado_token: "${{ secrets.ADO_PERSONAL_ACCESS_TOKEN }}"
+          ado_token: "${{ secrets.ADO_PERSONAL_ACCESS_TOKEN2 }}"
           github_token: "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}"
           ado_organization: "${{ secrets.ADO_ORGANIZATION_TOKEN }}"
           ado_project: "${{ secrets.ADO_PROJECT_TOKEN }}"
