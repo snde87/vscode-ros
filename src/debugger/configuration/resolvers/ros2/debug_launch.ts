@@ -72,7 +72,7 @@ export class LaunchResolver implements vscode.DebugConfigurationProvider {
             program: ros2_launch_dumper,
             args: args,
             env: rosExecOptions.env,
-            stopOnEntry: true,
+            stopOnEntry: false,
             justMyCode: false,
         };
 
