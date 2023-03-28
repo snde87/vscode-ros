@@ -47,12 +47,8 @@ export class LaunchResolver implements vscode.DebugConfigurationProvider {
     public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: requests.ILaunchRequest, token?: vscode.CancellationToken) {
         await fsp.access(config.target, fs.constants.R_OK);
 
-        if (path.extname(config.target) == ".xml" || path.extname(config.target) == ".yaml") {
-            throw new Error("Support for '.xml' or '.yaml' launch files coming soon (see https://github.com/ms-iot/vscode-ros/issues/805).");
-        }
-
-        if (path.extname(config.target) !== ".py") {
-            throw new Error("Launch request requires an extension '.py'.");
+        if (path.extname(config.target) !== ".py" && path.extname(config.target) == ".xml" && path.extname(config.target) == ".yaml") {
+            throw new Error("Launch request requires an extension '.py', '.xml' or '.yaml.");
         }
 
         const delay = ms => new Promise(res => setTimeout(res, ms));
