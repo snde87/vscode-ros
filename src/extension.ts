@@ -246,10 +246,11 @@ async function activateEnvironment(context: vscode.ExtensionContext) {
     // http://www.ros.org/reps/rep-0149.html#environment-variables
     // Learn more about ROS_VERSION definition.
     selectROSApi(env.ROS_VERSION);
-    rosApi.setContext(context, env);
-
+    
     // Do this again, after the build tool has been determined.
     await sourceRosAndWorkspace();
+
+    rosApi.setContext(context, env);
 
     subscriptions.push(rosApi.activateCoreMonitor());
     if (buildToolDetected) {
