@@ -204,7 +204,7 @@ export class LaunchResolver implements vscode.DebugConfigurationProvider {
         return pythonLaunchConfig;
     }
 
-    private createCppLaunchConfig(request: ILaunchRequest, stopOnEntry: boolean): ICppvsdbgLaunchConfiguration {
+    private createCppLaunchConfig(request: ILaunchRequest, stopOnEntry: boolean): ICppvsdbgLaunchConfiguration | ICppdbgLaunchConfiguration {
         const envConfigs: ICppEnvConfig[] = [];
         for (const key in request.env) {
             if (request.env.hasOwnProperty(key)) {
@@ -215,21 +215,45 @@ export class LaunchResolver implements vscode.DebugConfigurationProvider {
             }
         }
 
-        const cppvsdbgLaunchConfig: ICppvsdbgLaunchConfiguration = {
-            name: request.nodeName,
-            type: "cppvsdbg",
-            request: "launch",
-            cwd: ".",
-            program: request.executable,
-            args: request.arguments,
-            environment: envConfigs,
-            stopAtEntry: stopOnEntry,
-            symbolSearchPath: request.symbolSearchPath,
-            sourceFileMap: request.sourceFileMap
+        if (os.platform() === "win32") {
+                const cppvsdbgLaunchConfig: ICppvsdbgLaunchConfiguration = {
+                name: request.nodeName,
+                type: "cppvsdbg",
+                request: "launch",
+                cwd: ".",
+                program: request.executable,
+                args: request.arguments,
+                environment: envConfigs,
+                stopAtEntry: stopOnEntry,
+                symbolSearchPath: request.symbolSearchPath,
+                sourceFileMap: request.sourceFileMap
 
-        };
+            };
 
-        return cppvsdbgLaunchConfig;
+            return cppvsdbgLaunchConfig;
+        } else {
+            const cppdbgLaunchConfig: ICppdbgLaunchConfiguration = {
+                name: request.nodeName,
+                type: "cppdbg",
+                request: "launch",
+                cwd: ".",
+                program: request.executable,
+                args: request.arguments,
+                environment: envConfigs,
+                stopAtEntry: stopOnEntry,
+                additionalSOLibSearchPath: request.additionalSOLibSearchPath,
+                sourceFileMap: request.sourceFileMap,
+                setupCommands: [
+                    {
+                        text: "-enable-pretty-printing",
+                        description: "Enable pretty-printing for gdb",
+                        ignoreFailures: true
+                    }
+                ]
+            };
+            
+            return cppdbgLaunchConfig;
+        }
     }
 
     private async executeLaunchRequest(request: ILaunchRequest, stopOnEntry: boolean) {
