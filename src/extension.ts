@@ -248,6 +248,9 @@ async function activateEnvironment(context: vscode.ExtensionContext) {
     selectROSApi(env.ROS_VERSION);
     rosApi.setContext(context, env);
 
+    // Do this again, after the build tool has been determined.
+    await sourceRosAndWorkspace();
+
     subscriptions.push(rosApi.activateCoreMonitor());
     if (buildToolDetected) {
         subscriptions.push(...buildtool.BuildTool.registerTaskProvider());
