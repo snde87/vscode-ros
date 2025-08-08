@@ -1,30 +1,73 @@
-import * as BABYLON from 'babylonjs';
-import * as Materials from 'babylonjs-materials';
+// Dynamic imports for BabylonJS to enable code splitting
+// These will be loaded from external CDN or bundled separately
+declare global {
+  interface Window {
+    BABYLON: typeof import('babylonjs');
+    GUI: typeof import('babylonjs-gui');
+    MaterialsLibrary: typeof import('babylonjs-materials');
+  }
+}
+
 import * as urdf from '@polyhobbyist/babylon_ros';
 import * as ColladaFileLoader from '@polyhobbyist/babylon-collada-loader';
-import * as GUI from 'babylonjs-gui';
 
 // Get access to the VS Code API from within the webview context
 const vscode = acquireVsCodeApi();
 
+let BABYLON: typeof import('babylonjs');
+let GUI: typeof import('babylonjs-gui');
+let Materials: typeof import('babylonjs-materials');
+
+// Lazy load BabylonJS libraries
+async function initializeBabylon() {
+  if (typeof window !== 'undefined') {
+    // Use global references when available (external loading)
+    BABYLON = window.BABYLON || await import('babylonjs');
+    GUI = window.GUI || await import('babylonjs-gui');
+    Materials = window.MaterialsLibrary || await import('babylonjs-materials');
+  } else {
+    // Fallback to dynamic imports
+    [BABYLON, GUI, Materials] = await Promise.all([
+      import('babylonjs'),
+      import('babylonjs-gui'),
+      import('babylonjs-materials')
+    ]);
+  }
+}
+
+// Initialize after DOM loads
+document.addEventListener('DOMContentLoaded', async () => {
+  await initializeBabylon();
+  initializeScene();
+});
+
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement; // Get the canvas element
-const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
-let scene : BABYLON.Scene | undefined = undefined;
+let engine: InstanceType<typeof BABYLON.Engine> | undefined;
+let scene: InstanceType<typeof BABYLON.Scene> | undefined = undefined;
 
 let currentRobot : urdf.Robot | undefined = undefined;
 
-let ground : BABYLON.GroundMesh | undefined = undefined;
-let camera : BABYLON.ArcRotateCamera | undefined = undefined;
-let statusLabel = new GUI.TextBlock();
+let ground : InstanceType<typeof BABYLON.GroundMesh> | undefined = undefined;
+let camera : InstanceType<typeof BABYLON.ArcRotateCamera> | undefined = undefined;
+let statusLabel: InstanceType<typeof GUI.TextBlock>;
 
 function clearStatus() {
-  statusLabel.text = "";
+  if (statusLabel) {
+    statusLabel.text = "";
+  }
 }
 
 let readyToRender : Boolean = false;
 
-let jointAxisList : BABYLON.PositionGizmo[] = [];
-let linkAxisList : BABYLON.PositionGizmo[] = [];
+let jointAxisList : InstanceType<typeof BABYLON.PositionGizmo>[] = [];
+let linkAxisList : InstanceType<typeof BABYLON.PositionGizmo>[] = [];
+
+function initializeScene() {
+  if (!BABYLON || !canvas) return;
+  
+  engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+  statusLabel = new GUI.TextBlock();
+}
 
 
 function clearAxisGizmos() {

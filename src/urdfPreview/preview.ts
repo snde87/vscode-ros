@@ -233,8 +233,8 @@ export default class URDFPreview
     /**
    * Defines and returns the HTML that should be rendered within the webview panel.
    *
-   * @remarks This is also the place where *references* to CSS and JavaScript files
-   * are created and inserted into the webview HTML.
+   * @remarks This is also the place where references to the React webview build
+   * files are created and inserted into the webview HTML.
    *
    * @param webview A reference to the extension webview
    * @param extensionUri The URI of the directory containing the extension
@@ -242,9 +242,7 @@ export default class URDFPreview
    * rendered within the webview panel
    */
     private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
-        const webviewUri = this.getUri(webview, extensionUri, ["dist", "webview.js"]);
-        const webviewUriUrdf = this.getUri(webview, extensionUri, ["node_modules/@polyhobbyist/babylon_ros/dist", "ros.js"]);
-        const webviewUriBabylon = this.getUri(webview, extensionUri, ["node_modules/babylonjs", "babylon.max.js"]);
+        const webviewUri = this.getUri(webview, extensionUri, ["dist", "urdf-webview.js"]);
         const nonce = this.getNonce();
 
         // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
@@ -254,6 +252,10 @@ export default class URDFPreview
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <!-- Load BabylonJS from CDN for better performance and caching -->
+                <script src="https://cdn.babylonjs.com/babylon.js"></script>
+                <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+                <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
                 <style nonce="${nonce}">
                 html,
                 body {
@@ -262,6 +264,7 @@ export default class URDFPreview
                 height: 100%;
                 margin: 0;
                 padding: 0;
+                text-align: center;
                 }
 
                 #renderCanvas {
@@ -269,16 +272,16 @@ export default class URDFPreview
                 height: 100%;
                 touch-action: none;
                 }
-            </style>
-            <title>URDF Preview</title>
+                </style>
             </head>
             <body>
-                <canvas id="renderCanvas" touch-action="none"></canvas>    
-                <script type="module" nonce="${nonce}" src="${webviewUriBabylon}"></script>
+                <div style="width:100%;height:100%">
+                <canvas id="renderCanvas" touch-action="none"></canvas>
+                </div>
+                <!-- Load our bundled webview script after BabylonJS -->
                 <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
             </body>
-            </html>
-        `;
+            </html>`;
     }
 
     private getNonce() {

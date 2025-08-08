@@ -6,40 +6,49 @@ const path = require('path');
 
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
+// Base optimization settings
+const optimizationSettings = {
+  usedExports: true,
+  sideEffects: false,
+  providedExports: true,
+  minimize: true
+};
+
+// Config for extension source code (to be run in a Node-based context)
 /** @type WebpackConfig */
-const baseConfig = {
-  mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
+const extensionConfig = {
+  mode: "none",
+  target: "node",
+  entry: "./src/extension.ts",
   externals: {
-    vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    // modules added here also need to be added in the .vscodeignore file
+    vscode: 'commonjs vscode',
+    'applicationinsights-native-metrics': 'commonjs applicationinsights-native-metrics'
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
   },
   devtool: "source-map",
   infrastructureLogging: {
-    level: "log", // enables logging required for problem matchers
+    level: "log",
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         exclude: /node_modules/,
-        use: [{ loader: "ts-loader" }],
+        use: [{ 
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              target: "es2020",
+              module: "commonjs",
+              moduleResolution: "node"
+            }
+          }
+        }],
       },
     ],
-  }
-};
-
-// Config for extension source code (to be run in a Node-based context)
-/** @type WebpackConfig */
-const extensionConfig = {
-  ...baseConfig,
-  target: "node",
-  entry: "./src/extension.ts",
-  externals: {
-    vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    'applicationinsights-native-metrics': 'commonjs applicationinsights-native-metrics' // ignored because we don't ship native module
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -47,16 +56,43 @@ const extensionConfig = {
     libraryTarget: "commonjs2",
     devtoolModuleFilenameTemplate: '../[resource-path]'
   },
+  optimization: {
+    ...optimizationSettings,
+    splitChunks: false // Disable completely to avoid conflicts
+  }
 };
 
 /** @type WebpackConfig */
 const ros1_webview_config = {
-  ...baseConfig,
+  mode: "none",
   target: ["web", "es2022"],
   entry: "./src/ros/ros1/webview/ros1_webview_main.ts",
   experiments: { outputModule: true, topLevelAwait: true },
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
+  },
+  devtool: "source-map",
+  infrastructureLogging: {
+    level: "log",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [{ 
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              target: "es2020",
+              module: "esnext",
+              moduleResolution: "node"
+            }
+          }
+        }],
+      },
+    ],
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -64,16 +100,40 @@ const ros1_webview_config = {
     libraryTarget: "module",
     chunkFormat: "module",
   },
+  optimization: optimizationSettings
 };
 
-    /** @type WebpackConfig */
+/** @type WebpackConfig */
 const ros2_webview_config = {
-  ...baseConfig,
+  mode: "none",
   target: ["web", "es2022"],
   entry: "./src/ros/ros2/webview/ros2_webview_main.ts",
   experiments: { outputModule: true, topLevelAwait: true },
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
+  },
+  devtool: "source-map",
+  infrastructureLogging: {
+    level: "log",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [{ 
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              target: "es2020",
+              module: "esnext",
+              moduleResolution: "node"
+            }
+          }
+        }],
+      },
+    ],
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -81,22 +141,55 @@ const ros2_webview_config = {
     libraryTarget: "module",
     chunkFormat: "module",
   },
+  optimization: optimizationSettings
 };
 
 // Config for webview source code (to be run in a web-based context)
 /** @type WebpackConfig */
 const webviewURDFConfig = {
-  ...baseConfig,
+  mode: "none",
   target: ["web", "es2022"],
   entry: "./src/urdfPreview/URDFPreviewPanel.ts",
   experiments: { outputModule: true, topLevelAwait: true },
+  externals: {
+    // Don't bundle large libraries - load them externally
+    'babylonjs': 'BABYLON',
+    'babylonjs-materials': 'BABYLON.MaterialsLibrary', 
+    'babylonjs-gui': 'BABYLON.GUI'
+  },
+  resolve: {
+    extensions: [".ts", ".tsx", ".js"],
+  },
+  devtool: "source-map",
+  infrastructureLogging: {
+    level: "log",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [{ 
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              target: "es2020",
+              module: "esnext",
+              moduleResolution: "node"
+            }
+          }
+        }],
+      },
+    ],
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "webview.js",
+    filename: "urdf-webview.js",
     libraryTarget: "module",
     chunkFormat: "module",
   },
+  optimization: optimizationSettings
 };
-
 
 module.exports = [extensionConfig, ros1_webview_config, ros2_webview_config, webviewURDFConfig];
