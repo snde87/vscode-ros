@@ -1,21 +1,21 @@
-import * as BABYLON from 'babylonjs';
-import * as Materials from 'babylonjs-materials';
-import * as urdf from '@polyhobbyist/babylon_ros';
-import * as ColladaFileLoader from '@polyhobbyist/babylon-collada-loader';
-import * as GUI from 'babylonjs-gui';
-
 // Get access to the VS Code API from within the webview context
 const vscode = acquireVsCodeApi();
 
-const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement; // Get the canvas element
-const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+// Lazy load heavy dependencies
+let BABYLON: typeof import('babylonjs');
+let Materials: typeof import('babylonjs-materials');
+let urdf: typeof import('@polyhobbyist/babylon_ros');
+let ColladaFileLoader: typeof import('@polyhobbyist/babylon-collada-loader');
+let GUI: typeof import('babylonjs-gui');
+
 let scene : BABYLON.Scene | undefined = undefined;
+let engine : BABYLON.Engine | undefined = undefined;
 
 let currentRobot : urdf.Robot | undefined = undefined;
 
 let ground : BABYLON.GroundMesh | undefined = undefined;
 let camera : BABYLON.ArcRotateCamera | undefined = undefined;
-let statusLabel = new GUI.TextBlock();
+let statusLabel : GUI.TextBlock;
 
 function clearStatus() {
   statusLabel.text = "";
@@ -290,11 +290,58 @@ async function applyURDF(urdfText) {
   }
 }
 
-// Main function that gets executed once the webview DOM loads
-async function main() {
+// Initialize function to load dependencies
+async function initializeDependencies() {
+  try {
+    // Show loading status
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-indicator';
+    loadingDiv.innerHTML = '<p>Loading 3D viewer components...</p>';
+    loadingDiv.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-size: 18px;';
+    document.body.appendChild(loadingDiv);
 
-  scene = await createScene();
-  createUI(scene);
+    // Load dependencies in parallel
+    const [babylonModule, materialsModule, urdfModule, colladaModule, guiModule] = await Promise.all([
+      import('babylonjs'),
+      import('babylonjs-materials'),
+      import('@polyhobbyist/babylon_ros'),
+      import('@polyhobbyist/babylon-collada-loader'),
+      import('babylonjs-gui')
+    ]);
+
+    BABYLON = babylonModule;
+    Materials = materialsModule;
+    urdf = urdfModule;
+    ColladaFileLoader = colladaModule;
+    GUI = guiModule;
+
+    // Remove loading indicator
+    loadingDiv.remove();
+
+    // Initialize the scene after dependencies are loaded
+    initializeScene();
+  } catch (error) {
+    console.error('Failed to load dependencies:', error);
+    vscode.postMessage({
+      type: 'error',
+      message: 'Failed to load 3D viewer components'
+    });
+  }
+}
+
+
+
+// Move scene initialization to a separate function
+function initializeScene() {
+  const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
+  engine = new BABYLON.Engine(canvas, true);
+  
+  // Create scene
+  createScene().then(() => {
+    // Initialize status label
+    statusLabel = new GUI.TextBlock();
+    createUI(scene);
+  });
 
   window.addEventListener('message', event => {
     const message = event.data; // The JSON data our extension sent
@@ -318,23 +365,24 @@ async function main() {
     }
   });
   
+  // Start render loop
   engine.runRenderLoop(function () {
-    if (scene != undefined && readyToRender) {
+    if (scene && readyToRender) {
       scene.render();
     }
   });
-  
-  engine.resize();
-  
+
+  // Watch for browser/canvas resize events
   window.addEventListener("resize", function () {
-      engine.resize();
-  });  
+    engine.resize();
+  });
   
-  
+  // Send ready message
+  vscode.postMessage({ type: 'ready' });
 }
 
-  // Just like a regular webpage we need to wait for the webview
-  // DOM to load before we can reference any of the HTML elements
-  // or toolkit components
-  window.addEventListener("load", main);
+// Start loading dependencies when the page loads
+window.addEventListener('DOMContentLoaded', () => {
+  initializeDependencies();
+});
   

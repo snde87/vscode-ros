@@ -3,6 +3,8 @@
 'use strict';
 
 const path = require('path');
+const webpack = require('webpack');
+const TerserPlugin = require('terser-webpack-plugin');
 
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
@@ -15,6 +17,12 @@ const baseConfig = {
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
+    alias: {
+      // Ensure we use a single instance of BabylonJS
+      'babylonjs': path.resolve(__dirname, 'node_modules/babylonjs/babylon.js'),
+      'babylonjs-gui': path.resolve(__dirname, 'node_modules/babylonjs-gui/babylon.gui.js'),
+      'babylonjs-materials': path.resolve(__dirname, 'node_modules/babylonjs-materials/babylonjs.materials.js')
+    }
   },
   devtool: "source-map",
   infrastructureLogging: {
@@ -25,10 +33,42 @@ const baseConfig = {
       {
         test: /\.tsx?$/,
         exclude: /node_modules/,
-        use: [{ loader: "ts-loader" }],
+        use: [{ 
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            experimentalWatchApi: true
+          }
+        }],
       },
     ],
-  }
+  },
+  optimization: {
+    usedExports: true,
+    sideEffects: false,
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+            pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.trace'],
+          },
+          mangle: true,
+          format: {
+            comments: false,
+          },
+        },
+        extractComments: false,
+      }),
+    ],
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+    })
+  ]
 };
 
 // Config for extension source code (to be run in a Node-based context)
@@ -96,6 +136,30 @@ const webviewURDFConfig = {
     libraryTarget: "module",
     chunkFormat: "module",
   },
+  optimization: {
+    ...baseConfig.optimization,
+    splitChunks: {
+      chunks: 'async',
+      minSize: 20000,
+      minRemainingSize: 0,
+      minChunks: 1,
+      maxAsyncRequests: 30,
+      maxInitialRequests: 30,
+      enforceSizeThreshold: 50000,
+      cacheGroups: {
+        defaultVendors: {
+          test: /[\\/]node_modules[\\/]/,
+          priority: -10,
+          reuseExistingChunk: true,
+        },
+        default: {
+          minChunks: 2,
+          priority: -20,
+          reuseExistingChunk: true,
+        },
+      },
+    },
+  }
 };
 
 
