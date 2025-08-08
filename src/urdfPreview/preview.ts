@@ -243,8 +243,10 @@ export default class URDFPreview
    */
     private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
         const webviewUri = this.getUri(webview, extensionUri, ["dist", "webview.js"]);
-        const webviewUriUrdf = this.getUri(webview, extensionUri, ["node_modules/@polyhobbyist/babylon_ros/dist", "ros.js"]);
-        const webviewUriBabylon = this.getUri(webview, extensionUri, ["node_modules/babylonjs", "babylon.max.js"]);
+        const vendorBabylon = this.getUri(webview, extensionUri, ["dist", "vendor", "babylon.js"]);
+        const vendorGui = this.getUri(webview, extensionUri, ["dist", "vendor", "babylon.gui.min.js"]);
+        const vendorMaterials = this.getUri(webview, extensionUri, ["dist", "vendor", "babylonjs.materials.min.js"]);
+        const vendorUrdf = this.getUri(webview, extensionUri, ["dist", "vendor", "babylon_ros.js"]);
         const nonce = this.getNonce();
 
         // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
@@ -273,8 +275,11 @@ export default class URDFPreview
             <title>URDF Preview</title>
             </head>
             <body>
-                <canvas id="renderCanvas" touch-action="none"></canvas>    
-                <script type="module" nonce="${nonce}" src="${webviewUriBabylon}"></script>
+                <canvas id="renderCanvas" touch-action="none"></canvas>
+                <script nonce="${nonce}" src="${vendorBabylon}"></script>
+                <script nonce="${nonce}" src="${vendorGui}"></script>
+                <script nonce="${nonce}" src="${vendorMaterials}"></script>
+                <script nonce="${nonce}" src="${vendorUrdf}"></script>
                 <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
             </body>
             </html>
